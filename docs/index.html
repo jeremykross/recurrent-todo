@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8" content="text/html" http-equiv="Content-Type" /><meta content="FIXME: write this!" name="description" /><style type="text/css">/**
+<html><head><meta charset="utf-8" content="text/html" http-equiv="Content-Type" /><meta content="Yet Another Todo Example..." name="description" /><style type="text/css">/**
  * SyntaxHighlighter
  * http://alexgorbatchev.com/SyntaxHighlighter
  *
@@ -2865,7 +2865,7 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>recurrent-todo -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://example.com/FIXME">recurrent-todo</a></h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>FIXME: write this!</p>
+</script><title>recurrent-todo -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">recurrent-todo</h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>Yet Another Todo Example...</p>
 </div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.9.0</td></tr><tr><td class="dep-name">org.clojure/clojurescript</td><td class="dotted"><hr /></td><td class="dep-version">1.9.946</td></tr><tr><td class="dep-name">org.clojure/core.async</td><td class="dotted"><hr /></td><td class="dep-version">0.4.474</td></tr><tr><td class="dep-name">ulmus</td><td class="dotted"><hr /></td><td class="dep-version">0.1.0-SNAPSHOT</td></tr><tr><td class="dep-name">recurrent</td><td class="dotted"><hr /></td><td class="dep-version">0.1.1-SNAPSHOT</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#recurrent-todo.core">recurrent-todo.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#recurrent-todo.core" name="recurrent-todo.core"><h1 class="project-name">recurrent-todo.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns recurrent-todo.core
   (:require
@@ -3047,7 +3047,7 @@ consumed by our render signal.</p>
              (ulmus/reduce
                not
                false
-               ((:dom-$ sources) &quot;li&quot; &quot;click&quot;))))</pre></td></tr><tr><td class="docs"><p>Okay, let's build our todo list.</p>
+               ((:dom-$ sources) &quot;li&quot; &quot;click&quot;))))</pre></td></tr><tr><td class="docs"><h1>The Todo List</h1>
 </td><td class="codes"><pre class="brush: clojure">(recurrent/defcomponent TodoList
   ;
   ; In this case we pass the value-submission-$ of our
@@ -3097,8 +3097,10 @@ consumed by our render signal.</p>
                      (conj todo-list (Todo 
                                        {:initial-value new-todo}
                                        {:dom-$ (:global-dom-$ sources)})))
-                   [] (:value-submission-$ sources))))</pre></td></tr><tr><td class="docs"><p>Our main component, defined as a function, will construct the page by creating our components
-and taking their latest values.</p>
+                   [] (:value-submission-$ sources))))</pre></td></tr><tr><td class="docs"><h1>Main</h1>
+
+<p>Our main component, defined as a function, will construct the page
+by creating our components and taking their latest values.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn Main
   ;
   ; Main is a component just like the others - we're defining it without he macro sugar.
