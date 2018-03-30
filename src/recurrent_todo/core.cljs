@@ -195,7 +195,7 @@
                false
                ((:dom-$ sources) "li" "click"))))
 
-;; Okay, let's build our todo list.
+;; #  The Todo List
 (recurrent/defcomponent TodoList
   ;
   ; In this case we pass the value-submission-$ of our
@@ -253,8 +253,9 @@
                                        {:dom-$ (:global-dom-$ sources)})))
                    [] (:value-submission-$ sources))))
 
-;; Our main component, defined as a function, will construct the page by creating our components
-;; and taking their latest values.
+;; # Main
+;; Our main component, defined as a function, will construct the page
+;; by creating our components and taking their latest values.
 (defn Main
   ;
   ; Main is a component just like the others - we're defining it without he macro sugar.
