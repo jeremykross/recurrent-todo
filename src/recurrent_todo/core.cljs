@@ -2,7 +2,7 @@
   (:require
     garden.core
     recurrent.drivers.dom
-    [dommy.core :include-macros true]
+    [dommy.core :as dommy :include-macros true]
     [recurrent.core :as recurrent :include-macros true]
     [ulmus.core :as ulmus]))
 
@@ -10,7 +10,7 @@
 ;; Recurrent is a way to create functional-reactive GUIs in Clojurescript.  It's designed to be reactive all-the-way-down (unlike React which is only reactive at the point of rendering).  It hopefully also avoids some of the boilerplate of Redux while maintaing functions as encapsulated units (rather than functions + constants + actions + reducers).
 
 ;; ## The Component
-;; A component in Recurrent is a function of two arguments.  The first argument, called `props`, is a mapping of keys to static data.  A second argument, called `sources`, is a mapping of keys to reactive (time-varying) signals created with Ulmus.  Said functions return a map of keyed signals that can be used to update other components, or mutate some external state.  Recurrent provides faculties for taking a signal of virtual-dom and diffing that into the actual DOM.
+;; A component in Recurrent is a function of two arguments.  The first argument, called `props`, is a mapping of keys to static data.  A second argument, called `sources`, is a mapping of keys to reactive (time-varying) signals created with Ulmus.  Said Components (read functions) return a map of keyed signals that can be used to update other components, or mutate some external state.  Recurrent provides faculties for taking a signal of virtual-dom and diffing that into the actual DOM.
 ;; While Recurrent components are functions, it provides a macro to make building them a little more natural.  Let's look at that now.
 ;;
 
@@ -45,7 +45,7 @@
   ; This is provided in the Garden format.  It is included in the html page
   ; globally, so be careful, but will only ever get included once.
   ; 
-  [:.text-input {}]
+  [:.text-input {:margin "16px 0px 0px 16px"}]
 
   ;
   ; Finally we provide a list of return signals, keyed appropriately.  The 
@@ -76,7 +76,7 @@
            (ulmus/map 
              (fn [value]
                ; Heres our html.
-               [:input {:class "text-input" :type "text" :value value}])
+               [:input {:class "text-input" :type "text" :value value :placeholder "What needs to be done?"}])
              (ulmus/start-with!
                ; We set the starting value to the initial-value passed in props
                (or (:initial-value props) "")
@@ -94,7 +94,9 @@
              ; 
              (ulmus/map
                (fn [evt]
-                 (.-value (.-target evt)))
+                 (if (= (.-keyCode evt) 13) 
+                   ""
+                   (.-value (.-target evt))))
                ((:dom-$ sources) "input" "keydown"))) 
 
   :value-submission-$ (fn [_ _ sources sinks]
@@ -110,12 +112,12 @@
                               (= (.-keyCode evt) 13))
                             ((:dom-$ sources) "input" "keydown")))))
 
-;; # Baby Steps
+;; # A More Complex Example
 ;; Let's look at something a little more complex.  The Todo component
 ;; has a reasonable amount of internal state management so it makes 
 ;; a useful case study.  We give the Todo an initial value 
 ;; through it's props, but double clicking the Todo displays a text
-;; input through which we can update the value.  Single clicking the 
+;; input through which we can update the value.  Clicking to the left of the 
 ;; todo marks it as done.  These will be exposed as sinks, as well as
 ;; consumed by our render signal.
 ;;
@@ -130,28 +132,51 @@
   ;
   ; Constructor
   ;
-  (fn [])
+  ; It's helpful for Todo's to have a unique id for their lifetime.
+  ; We generate this in the constructor and can access it hereafter
+  ; on `this`.
+  ;
+  (fn []
+    {:id (gensym)})
 
   ;
-  ; We include some styles here to render with a strikethrough
-  ; when the todo is marked as done.
+  ; We include some styles here.
   ;
   [:.todo {:cursor "pointer"
+           :display "flex"
+           :margin "16px"
            :user-select "none"}
-   [:&.done {:text-decoration "line-through"}]]
+   [:.check {:border "1px solid lightgrey"
+             :border-radius "8px"
+             :height "16px"
+             :margin-right "8px"
+             :width "16px"}
+    [:&.done {:background "black"}]]
+   [:.close {:margin-left "8px"}]
+   [:li {:display "block"}
+    [:&.done {:text-decoration "line-through"}]]]
 
   ;
   ; Our render signal is based on three sinks, the current value,
   ; whether or not the todo is being edited, and whether or not the todo
-  ; is marked as complete.
+  ; is marked as complete.  ulmus.core/latest is used to grab the most
+  ; current value from each of these signals.  These then get mapped over
+  ; to create a suitable block of vdom.
   ;
-  :dom-$ (fn [_ _ sources sinks]
+  ; Like React, we give keys to lists items to assist reconciliation.
+  ; We do this here by attaching the :hipo/key metadata.
+  ;
+  :dom-$ (fn [this _ sources sinks]
            (ulmus/map
              (fn [[value editing? done?]]
-               (if editing?
-                 [:input {:type "text"
-                          :value value}]
-                 [:li {:class (str "todo " (if done? "done"))} value]))
+               ^{:hipo/key (:id this)}
+               [:div {:class "todo"}
+                 [:div {:class (str "check " (if done? "done"))}]
+                 (if editing?
+                   [:input {:type "text"
+                            :value value}]
+                   [:li {:class (if done? "done" "")} value])
+                [:div {:class "close" :data-todo value} "[ x ]"]])
              (ulmus/latest
                (:value-$ sinks)
                (:editing?-$ sinks)
@@ -193,9 +218,9 @@
              (ulmus/reduce
                not
                false
-               ((:dom-$ sources) "li" "click"))))
+               ((:dom-$ sources) ".check" "click"))))
 
-;; #  The Todo List
+;; # The Todo List
 (recurrent/defcomponent TodoList
   ;
   ; In this case we pass the value-submission-$ of our
@@ -242,16 +267,32 @@
              (:todo-list-$ sinks)))
 
   :todo-list-$ (fn [_ _ sources _]
-                 ; Finally our todo list.  It's a simple reduction over value-submission-$.
+                 ; Finally our todo list.  It's a reduction over two sources.
+                 ; 1. value-submission-$, coming from the text input defined above.
+                 ; 2. A signal of click events on the list items close buttons.
+                 ; These are used to add or remove todo's respectively.
                  (ulmus/reduce
-                   (fn [todo-list new-todo]
-                     ;
-                     ; We construct a new Todo for each request that comes in.
-                     ;
-                     (conj todo-list (Todo 
-                                       {:initial-value new-todo}
-                                       {:dom-$ (:global-dom-$ sources)})))
-                   [] (:value-submission-$ sources))))
+                   (fn [todo-list change]
+                     (if (= (:type change) :create) 
+                       ;
+                       ; We construct a new Todo for each request that comes in.
+                       ;
+                       (conj todo-list (Todo 
+                                         {:initial-value (:todo change)}
+                                         {:dom-$ (:global-dom-$ sources)}))
+                       (remove #(= @(:value-$ %) (:todo change)) todo-list)))
+                   [] 
+                   (ulmus/merge
+                     (ulmus/map
+                       (fn [todo]
+                         {:type :create
+                          :todo todo})
+                       (:value-submission-$ sources))
+                     (ulmus/map
+                       (fn [e]
+                         {:type :delete
+                          :todo (dommy/attr (.-target e) "data-todo")})
+                       ((:dom-$ sources) ".close" "click"))))))
 
 ;; # Main
 ;; Our main component, defined as a function, will construct the page
@@ -264,7 +305,7 @@
   ;
   ; We construct our components, again, they're functions of props and sources.
   ;
-  (let [todo-input (TextInput {:initial-value "Buy Groceries"}
+  (let [todo-input (TextInput {:initial-value ""}
                               {:dom-$ (:dom-$ sources)})
         todo-list (TodoList {} {:dom-$ (:dom-$ sources)
                                 :value-submission-$ (:value-submission-$ todo-input)})]
